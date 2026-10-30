@@ -79,7 +79,11 @@ const FIELDS=['exam','region','state','city','tcCode','centre','date','shift','i
 const COLS=[['id','#'],['exam','Exam'],['date','Date'],['shift','Shift'],['region','Region'],['centre','Centre'],['issue','Issue'],['category','Category'],['delay','Delay'],['impact','Impact']];
 let rows=[],pass='',cur=null,sort={k:'date',d:-1};
 let TOKEN='',ME=null;
-const store={get(){try{return localStorage.getItem('inc_tok')||TOKEN}catch(e){return TOKEN}},set(v){TOKEN=v;try{v?localStorage.setItem('inc_tok',v):localStorage.removeItem('inc_tok')}catch(e){}}};
+function lsOK(){try{localStorage.setItem('_t','1');localStorage.removeItem('_t');return true}catch(e){return false}}
+const LS=lsOK(),HASH=!!(CLOUD&&!LS&&google.script.history&&google.script.url); // browser blocks storage inside Apps Script -> keep the session in the URL hash
+const store={get(){if(LS)try{return localStorage.getItem('inc_tok')||''}catch(e){}return TOKEN},
+  set(v){TOKEN=v;if(LS)try{v?localStorage.setItem('inc_tok',v):localStorage.removeItem('inc_tok')}catch(e){}
+    if(HASH)try{google.script.history.replace(null,null,v?'s='+v:'')}catch(e){}}};
 const isAdmin=()=>ME&&ME.role==='admin';
 function api(fn,...a){
   const tok=store.get();
@@ -162,13 +166,13 @@ async function delAll(){const x=$('#fx').value;if(!rows.length)return toast('Not
   const w=x?`all records of "${x}"`:'ALL records of ALL exams';
   if(prompt(`This permanently deletes ${w}. Tip: use Export CSV first.\nType DELETE to confirm:`)!=='DELETE')return;
   if(await write('deleteAll',x))toast('Records deleted')}
-function showLogin(m){ME=null;store.set('');document.body.classList.remove('in','admin');$('#l_msg').textContent=m||'';document.querySelectorAll('dialog').forEach(d=>d.open&&d.close())}
+function showLogin(m,keep){ME=null;if(!keep)store.set('');document.body.classList.remove('in','admin');$('#l_msg').textContent=m||'';document.querySelectorAll('dialog').forEach(d=>d.open&&d.close())}
 function enter(){document.body.classList.add('in');document.body.classList.toggle('admin',isAdmin());$('#who').textContent=ME.username+' ('+ME.role+')';load();if(ME.mustChange)openPw(true)}
 async function doLogin(){const u=$('#l_user').value.trim().toLowerCase(),p=$('#l_pass').value;$('#l_msg').textContent='';
   if(!u||!p)return $('#l_msg').textContent='Enter username and password';
   try{const r=await api('login',u,p);store.set(r.token);ME=r.user;$('#l_pass').value='';enter()}catch(e){$('#l_msg').textContent=e.message}}
 async function logout(){try{await api('logout')}catch(e){}showLogin()}
-async function boot(){if(!store.get())return showLogin();try{ME=await api('me');enter()}catch(e){if(e.message!=='Signed out')showLogin(e.message)}}
+async function boot(){if(!store.get())return showLogin();try{ME=await api('me');enter()}catch(e){if(e.message!=='Signed out')showLogin(e.message,true)}}
 function openPw(force){$('#p_old').value=$('#p_new').value='';$('#pwt').textContent=force?'Set a new password to continue':'Change password';$('#pwc').style.display=force?'none':'';$('#pw').showModal()}
 $('#pw').addEventListener('cancel',e=>{if(ME&&ME.mustChange)e.preventDefault()});
 async function savePw(){try{await api('changePassword',$('#p_old').value,$('#p_new').value);ME.mustChange=false;$('#pw').close();toast('Password changed')}catch(e){toast(e.message)}}
@@ -179,5 +183,6 @@ function uReset(n){const p=prompt('New password for '+n+' (min 6 characters):');
 async function uDel(n){if(!confirm('Delete user '+n+'?'))return;try{await api('deleteUser',n);toast('Deleted')}catch(e){toast(e.message)}refUsers()}
 async function addUser(){const n=$('#u_name').value.trim().toLowerCase(),p=$('#u_pw').value;if(!n||!p)return toast('Username and password are required');
   try{await api('saveUser',{username:n,password:p,role:$('#u_role').value,active:true});$('#u_name').value=$('#u_pw').value='';toast('User saved')}catch(e){toast(e.message)}refUsers()}
-boot();setInterval(()=>{if(ME&&![...document.querySelectorAll('dialog')].some(d=>d.open))load()},60000);
+if(HASH)google.script.url.getLocation(l=>{const m=String(l.hash||'').match(/(?:^|&)s=([\w-]+)/);if(m)TOKEN=m[1];boot()});else boot();
+setInterval(()=>{if(ME&&![...document.querySelectorAll('dialog')].some(d=>d.open))load()},60000);
 </script></body></html>
