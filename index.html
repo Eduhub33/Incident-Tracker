@@ -31,7 +31,8 @@ dialog{border:1px solid var(--bd);border-radius:14px;background:var(--card);colo
 #login input{width:100%;margin:4px 0 10px}.adm{display:none}body.admin .adm{display:inline-block}.err{color:var(--hi);min-height:18px;font-size:13px}
 #toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:8px 14px;border-radius:8px;display:none;z-index:9}
 @media(max-width:560px){.f{grid-template-columns:1fr}}
-</style></head><body>
+#boot{display:none;text-align:center;margin-top:22vh;color:var(--mu)}body.chk #boot{display:block}body.chk #login{display:none!important}
+</style></head><body class="chk">
 <header><div><h1>Incident Dashboard</h1><small id="sub"></small></div>
 <div class="st"><span class="dot" id="dot"></span><small id="sync">Loading…</small>
 <button onclick="load()">Refresh</button><button onclick="csv()">Export CSV</button><button class="adm" onclick="openImp()">Import Excel</button><button class="adm" onclick="delAll()" style="color:var(--hi)">Delete all</button><button class="adm" onclick="openUsers()">Users</button><button class="p" onclick="edit()">+ Add incident</button><small id="who" style="margin-left:6px"></small><button onclick="openPw()">Password</button><button onclick="logout()">Logout</button></div></header>
@@ -58,6 +59,7 @@ dialog{border:1px solid var(--bd);border-radius:14px;background:var(--card);colo
 <label class="w">Mode<select id="i_mode"><option value="append">Add to existing records</option><option value="replace">Replace all existing records</option></select></label>
 <p class="w mu" id="i_info" style="margin:0">Choose a file. Columns are matched by name (Region, State, City, TC Code, Test Center Name, Date, Shift, ISSUE, Delay (min), Delay Impact, Category of Issue, REMARKS, optional Exam).</p></div>
 <p style="display:flex;gap:8px;justify-content:flex-end;margin:14px 0 0"><button onclick="imp.close()">Cancel</button><button class="p" id="i_go" onclick="doImport()" disabled>Import</button></p></dialog>
+<div id="boot">Loading…</div>
 <div id="login" class="card"><h2 style="font-size:18px;color:var(--tx);text-transform:none;margin-bottom:12px">Incident Dashboard — Sign in</h2>
 <label class="mu">Username</label><input id="l_user" autocomplete="username"><label class="mu">Password</label><input id="l_pass" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
 <div class="err" id="l_msg"></div><button class="p" style="width:100%" onclick="doLogin()">Sign in</button></div>
@@ -166,8 +168,8 @@ async function delAll(){const x=$('#fx').value;if(!rows.length)return toast('Not
   const w=x?`all records of "${x}"`:'ALL records of ALL exams';
   if(prompt(`This permanently deletes ${w}. Tip: use Export CSV first.\nType DELETE to confirm:`)!=='DELETE')return;
   if(await write('deleteAll',x))toast('Records deleted')}
-function showLogin(m,keep){ME=null;if(!keep)store.set('');document.body.classList.remove('in','admin');$('#l_msg').textContent=m||'';document.querySelectorAll('dialog').forEach(d=>d.open&&d.close())}
-function enter(){document.body.classList.add('in');document.body.classList.toggle('admin',isAdmin());$('#who').textContent=ME.username+' ('+ME.role+')';load();if(ME.mustChange)openPw(true)}
+function showLogin(m,keep){document.body.classList.remove('chk');ME=null;if(!keep)store.set('');document.body.classList.remove('in','admin');$('#l_msg').textContent=m||'';document.querySelectorAll('dialog').forEach(d=>d.open&&d.close())}
+function enter(){document.body.classList.remove('chk');document.body.classList.add('in');document.body.classList.toggle('admin',isAdmin());$('#who').textContent=ME.username+' ('+ME.role+')';load();if(ME.mustChange)openPw(true)}
 async function doLogin(){const u=$('#l_user').value.trim().toLowerCase(),p=$('#l_pass').value;$('#l_msg').textContent='';
   if(!u||!p)return $('#l_msg').textContent='Enter username and password';
   try{const r=await api('login',u,p);store.set(r.token);ME=r.user;$('#l_pass').value='';enter()}catch(e){$('#l_msg').textContent=e.message}}
