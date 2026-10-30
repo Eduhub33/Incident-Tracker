@@ -125,7 +125,7 @@ async function save(){const r={id:cur?cur.id:0};FIELDS.forEach(k=>r[k]=$('#e_'+k
 async function del(id){if(confirm('Delete incident #'+id+'?'))await write('deleteIncident',id)}
 function csv(){const h=['id',...FIELDS],q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
   const t=[h.join(','),...filtered().map(r=>h.map(k=>q(r[k])).join(','))].join('\n'),a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([t],{type:'text/csv'}));a.download='ssc_incidents.csv';a.click()}
+  a.href=URL.createObjectURL(new Blob([t],{type:'text/csv'}));const n=new Date(),p=x=>String(x).padStart(2,'0');a.download=`Live incident report ${p(n.getDate())}-${p(n.getMonth()+1)}-${n.getFullYear()}.csv`;a.click()}
 ['#q','#fx','#fr','#fc','#fi','#fd'].forEach(s=>$(s).addEventListener('input',render));
 const NK=s=>String(s).toLowerCase().replace(/[^a-z0-9]/g,'');
 const MAP={exam:['exam','examname','examination'],region:['region'],state:['state'],city:['city'],tcCode:['tccode','centrecode'],centre:['testcentername','centrename','testcentre','centre'],date:['date'],shift:['shift'],issue:['issue'],category:['categoryofissue','category','incidenttype'],delay:['delaymin','delay','delayminutes'],impact:['delayimpact','impact'],remarks:['remarks']};
